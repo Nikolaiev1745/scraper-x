@@ -1,0 +1,32 @@
+# Credenciales y sesión — NUNCA commitear
+.env
+state.json
+# Base de cuentas/sesiones de twscrape
+accounts.db
+accounts.db-shm
+accounts.db-wal
+
+# App generada por crear_app.command (artefacto, no codigo)
+*.app/
+
+# Salidas
+output/
+# Carpetas usadas recientemente (nombres de causas)
+recientes.json
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.pyc
+.python-version
+
+# Playwright
+playwright-report/
+test-results/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

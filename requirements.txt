@@ -1,0 +1,13 @@
+# Los techos son para que una instalacion nueva dentro de unos meses no traiga
+# una version mayor con cambios incompatibles. Sin ellos, la herramienta se
+# rompe sola en la maquina de otro y no hay forma de enterarse hasta que avisa.
+pandas>=2.2.0,<4
+openpyxl>=3.1.0,<4
+python-dotenv>=1.0.0,<2
+flask>=3.0.0,<4
+
+# twscrape va SIN techo a proposito. X cambia su frontend seguido y lo rompe; el
+# arreglo es 'pip install -U twscrape', del lado de quien la usa. Si la version
+# quedara fijada aca, la reinstalacion que dispara un requirements.txt nuevo le
+# volveria a bajar la version vieja y le rompe lo que acababa de arreglar.
+twscrape>=0.16
