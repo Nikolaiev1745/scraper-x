@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import shutil
 import socket
 import subprocess
 import sys
@@ -170,6 +171,15 @@ def _instalar() -> bool:
     """
     print(" Primera vez: preparando el entorno.")
     print(" Tarda unos minutos. No cierres esta ventana.\n")
+
+    # El proyecto puede venir de otra plataforma: por ejemplo, una carpeta
+    # creada en WSL/Linux y abierta despues con doble clic en Windows. En ese
+    # caso existe .venv pero con el interprete de Linux (bin/python), no el de
+    # Windows (Scripts/python.exe). Se descarta y se crea uno limpio; si no, la
+    # instalacion quedaria mezclada y fallaria de formas dificiles de explicar.
+    if venv_dir().exists() and not venv_python().exists():
+        print(" [1/2] El entorno virtual es de otro sistema; se recrea.")
+        shutil.rmtree(venv_dir(), ignore_errors=True)
 
     if not venv_python().exists():
         print(f" [1/2] Creando el entorno virtual en {venv_dir()}")
@@ -321,6 +331,16 @@ def _avisar(titulo: str, mensaje: str) -> None:
                  'default button 1 with icon caution'.format(
                      _as_literal(mensaje), _as_literal(titulo))],
                 capture_output=True, timeout=120,
+            )
+            return
+        except Exception:  # noqa: BLE001 - si el dialogo falla, queda el print
+            pass
+    if IS_WINDOWS:
+        try:
+            import ctypes  # noqa: PLC0415 - solo existe en Windows
+            MB_ICONWARNING = 0x30
+            ctypes.windll.user32.MessageBoxW(
+                None, f"{titulo}\n\n{mensaje}", "Scraper de X", MB_ICONWARNING
             )
             return
         except Exception:  # noqa: BLE001 - si el dialogo falla, queda el print

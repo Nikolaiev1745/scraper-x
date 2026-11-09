@@ -61,7 +61,8 @@ primera vez y se guardan solas. Para armarlo a mano, `cp .env.example .env`.
 > **No copies un `.env` de otra máquina entre sistemas distintos.** Si trae
 > `SCRAPER_OUTPUT_DIR=C:\Casos\...` y lo abrís en Mac, la ruta no es válida: la herramienta lo
 > detecta, avisa por consola y usa `output/` en vez de crear una carpeta con un nombre raro.
-> Configurá la carpeta de nuevo desde el formulario web.
+> Configurá la carpeta de nuevo desde el formulario web. Entre **Windows y WSL** sí se puede
+> compartir: la ruta se traduce sola (`C:\...` ↔ `/mnt/c/...`).
 
 ---
 
@@ -165,6 +166,9 @@ Es el primer paso de cada corrida, arriba de todo en el formulario.
   porque son nombres de causas) y las que ya no existen se descartan solas.
 - También podés **pegar la ruta a mano** en el campo. Es el camino de respaldo si el selector no
   está disponible.
+- Las rutas se adaptan solas entre Windows y WSL: `C:\Casos\expediente` y
+  `/mnt/c/Casos/expediente` apuntan a la misma carpeta. Podés usar el mismo `.env` en las dos
+  plataformas sin editarlo.
 
 Apenas elegís una carpeta, la herramienta te dice qué hay ahí: qué cuentas ya se descargaron y,
 para la cuenta objetivo, cuántos registros y de cuándo es el último tweet.

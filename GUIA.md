@@ -32,6 +32,9 @@ Dos motivos, los dos hacen fallar la instalación:
   Algo como `C:\Users\tu.nombre\OneDrive - ...\Documentos\Herramientas\...` es
   demasiado. Si pasa, la herramienta te lo avisa y te dice qué hacer.
 
+> Si la carpeta viene de WSL/Linux, podés borrar `.venv` antes de copiarla:
+> en Windows se recrea sola la primera vez.
+
 ## 3. Abrirla
 
 Doble clic en **`run_web.bat`**.
@@ -65,6 +68,10 @@ con valores nuevos.
 1. **Elegir la carpeta del caso** (botón `Elegir...`). Ahí van los archivos.
 2. **Poner la cuenta** a descargar, sin la arroba.
 3. Mirar lo que informa de esa carpeta y apretar **Ejecutar**.
+
+> La ruta se puede escribir como `C:\Casos\expediente` o como
+> `/mnt/c/Casos/expediente`: la herramienta la adapta sola según corras en
+> Windows o en WSL. Si no sabés qué filtro elegir, dejá **Descarga completa**.
 
 Queda un solo juego de archivos por cuenta (`cuenta_all.xlsx`, `.csv`, `.json`)
 que se va actualizando en cada corrida, en vez de descargas sueltas por fecha.

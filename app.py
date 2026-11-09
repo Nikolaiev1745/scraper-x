@@ -122,7 +122,14 @@ def leer_recientes() -> list[str]:
         return []
     if not isinstance(datos, list):
         return []
-    return [d for d in datos if isinstance(d, str) and d]
+    salida = []
+    for d in datos:
+        if isinstance(d, str) and d:
+            try:
+                salida.append(str(config.adapt_path(d)))
+            except Exception:  # noqa: BLE001 - recordar carpetas nunca es fatal
+                salida.append(d)
+    return salida
 
 
 def recientes_ui() -> list[dict]:
@@ -501,6 +508,23 @@ PAGE = """
     .grid { grid-template-columns: 1fr; }
   }
   .head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+  /* Mini carteles de ayuda: pasos de uso y aclaraciones cortas. */
+  .pasos {
+    display: flex; gap: 7px; flex-wrap: wrap; margin: 10px 0 2px;
+    font-size: 12px; color: #8b95a5;
+  }
+  .pasos span {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: #0e1116; border: 1px solid #2b323d; border-radius: 999px;
+    padding: 4px 10px;
+  }
+  .pasos b {
+    display: inline-flex; width: 16px; height: 16px; border-radius: 50%;
+    background: #4f8cff; color: #fff; align-items: center; justify-content: center;
+    font-size: 10px;
+  }
+  .sum-hint { text-transform: none; letter-spacing: 0; color: #6c7585; }
+  .hint code { color: #b7c0cd; }
   /* Discreto y en la esquina opuesta a Ejecutar: son acciones muy distintas y
      no se tienen que poder confundir. */
   #salir {
@@ -632,6 +656,11 @@ PAGE = """
       <p class="sub">Descarga tweets de un perfil a JSON / CSV / Excel.</p>
       <button type="button" id="salir" title="Detener el servidor y cerrar la herramienta">Salir</button>
     </div>
+    <div class="pasos">
+      <span><b>1</b> Elegí la carpeta de guardado</span>
+      <span><b>2</b> Escribí el usuario (sin @)</span>
+      <span><b>3</b> Revisá el filtro y Ejecutá</span>
+    </div>
 
     <div class="grid">
 
@@ -666,14 +695,18 @@ PAGE = """
         <button type="button" id="elegirDir" title="Elegir la carpeta con el selector del sistema">Elegir...</button>
         <button type="button" id="abrirDir" title="Abrir la carpeta en el gestor de archivos">Abrir</button>
       </div>
+      <div class="hint">Acá se guardan los archivos. Usá <b>Elegir...</b> o pegá una ruta
+        como <code>C:\\Casos\\expediente</code> (en WSL, <code>/mnt/c/Casos/expediente</code>).
+        La última carpeta queda recordada.</div>
       <div class="row">
         <div>
           <label>Usuario (sin @)</label>
           <input type="text" id="target" name="target" value="{{ form.target }}" placeholder="nasa" autofocus>
         </div>
         <div>
-          <label>Maximo (opcional)</label>
-          <input type="number" name="max_tweets" min="1" value="{{ form.max_tweets }}" placeholder="sin limite">
+          <label>Maximo (opcional, vacío = todo)</label>
+          <input type="number" name="max_tweets" min="1" value="{{ form.max_tweets }}" placeholder="sin limite"
+                 title="Corta la descarga al llegar a esa cantidad de tweets. Vacío = sin límite.">
         </div>
       </div>
       <div id="estado" class="estado">Consultando la carpeta...</div>
@@ -684,6 +717,10 @@ PAGE = """
     <div class="col">
     <fieldset>
       <legend>Que traer</legend>
+      <div class="hint" style="margin-top:0; margin-bottom:8px">
+        <b>Filtro:</b> elegí qué parte del perfil bajar. Si es la primera vez,
+        dejá <b>Descarga completa</b>.
+      </div>
       <label class="chk modo"><input type="radio" name="modo" value="completa" onchange="modoManual()"
         {{ 'checked' if form.modo == 'completa' }}>Descarga completa</label>
       <label class="chk modo" id="upd-lbl"><input type="radio" id="upd" name="modo" value="update" onchange="modoManual()"
@@ -706,6 +743,8 @@ PAGE = """
           <input type="date" id="until" name="until" value="{{ form.until }}">
         </div>
       </div>
+      <div class="hint" id="fechas-hint">Opcional: limita los tweets a un rango
+        de fechas. Vacío = todo lo disponible.</div>
       <div id="winbox">
         <label>Dias por ventana</label>
         <input type="number" id="win" name="window_days" min="1" value="{{ form.window_days }}">
@@ -715,6 +754,10 @@ PAGE = """
 
     <fieldset>
       <legend>Que incluir</legend>
+      <div class="hint" style="margin-top:0; margin-bottom:8px">
+        <b>Tipos:</b> qué publicaciones traer. <b>Formatos:</b> en qué archivos
+        guardar (JSON es la fuente de verdad).
+      </div>
       <label class="first">Tipos</label>
       <div class="checks">
         <label class="chk"><input type="checkbox" name="types" value="tweets" {{ 'checked' if 'tweets' in form.types }}>Tweets</label>
@@ -741,15 +784,23 @@ PAGE = """
            solo (y se marca) cuando la corrida fallo, que es justo cuando hace
            falta pegar unas nuevas. -->
       <details class="plegable{{ ' urgente' if error }}" {{ 'open' if error }}>
-        <summary>Sesion de X &mdash; cookies</summary>
+        <summary>Sesion de X &mdash; cookies
+          <span class="sum-hint">(¿vencidas? acá te decimos cómo sacarlas)</span>
+        </summary>
         <div class="cuerpo">
           <fieldset>
+            <div class="hint" style="margin-top:0; margin-bottom:10px">
+              <b>Cómo extraerlas:</b> 1) Abrí <b>x.com</b> con tu sesión iniciada.
+              2) Apretá <b>F12</b> → <b>Application</b> (o <b>Storage</b>) →
+              <b>Cookies</b> → <code>https://x.com</code>.
+              3) Copiá los valores de <code>auth_token</code> y <code>ct0</code>.
+              4) Pegalos acá: se guardan solos para la próxima.
+            </div>
             <label class="first">auth_token</label>
             <input type="text" name="auth_token" placeholder="pega aca el auth_token" autocomplete="off">
             <label>ct0</label>
             <input type="text" name="ct0" placeholder="pega aca el ct0" autocomplete="off">
-            <div class="hint">Dejalos vacios para usar la sesion ya guardada. Se sacan de
-              las cookies de x.com (DevTools &gt; Application &gt; Cookies).</div>
+            <div class="hint">Dejalos vacios para usar la sesion ya guardada.</div>
           </fieldset>
         </div>
       </details>
@@ -803,6 +854,7 @@ PAGE = """
       document.getElementById('since').disabled = isUpd;
       document.getElementById('until').disabled = isUpd;
       document.getElementById('fechasbox').classList.toggle('off', isUpd);
+      document.getElementById('fechas-hint').style.display = isUpd ? 'none' : 'block';
       // Retweets: la busqueda del historial no los devuelve.
       var rt = document.getElementById('rt');
       rt.disabled = isHist;
@@ -1011,8 +1063,8 @@ PAGE = """
       v.id = id;
       v.className = 'buscador';
       v.innerHTML = 'Se abrio el <b>selector de carpetas del sistema</b>.' +
-        '<br>Si no lo ves, macOS pudo haberlo abierto en <b>otra pantalla</b>: ' +
-        'revisa tus otros monitores, o usa <b>Cmd+Tab</b> y elegi "Elegir carpeta".';
+        '<br>Si no lo ves, revisá si quedó <b>detrás de esta ventana</b> ' +
+        '(o en otro monitor) y traelo al frente.';
       document.body.appendChild(v);
     }
 

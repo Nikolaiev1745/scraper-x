@@ -1,20 +1,53 @@
 @echo off
-rem Lanza la interfaz web del scraper. Doble clic para abrir.
-rem Va por .bat (no .ps1) para no depender de la ExecutionPolicy de PowerShell.
-rem Toda la logica vive en run_web.py, que es multiplataforma: verifica el
-rem entorno virtual, elige un puerto libre, abre el navegador y levanta el
-rem servidor.
-cd /d "%~dp0"
+chcp 65001 >nul
+setlocal
+title Scraper de X
 
-rem Se detecta el lanzador con 'where' y no por errorlevel: 'if errorlevel N'
-rem compara MAYOR O IGUAL, y al frenar el servidor con Ctrl+C Windows devuelve
-rem 0xC000013A (3221225786), que es mayor que cualquier centinela y volveria a
-rem arrancar el servidor justo cuando lo estas cerrando.
-where py >nul 2>nul
-if %errorlevel%==0 (
-    py -3 run_web.py %*
-) else (
-    python run_web.py %*
+rem pushd (en vez de cd /d) tambien funciona si el .bat se abre desde una
+rem carpeta de red o desde \\wsl$\...: Windows le asigna una letra temporal.
+pushd "%~dp0" >nul
+if errorlevel 1 (
+    echo.
+    echo   No se pudo abrir la carpeta de la herramienta:
+    echo   "%~dp0"
+    echo.
+    echo   Copiala a una ruta local, por ejemplo C:\Scraper.
+    echo.
+    pause
+    exit /b 1
 )
 
-pause
+rem UTF-8 para que los acentos y las rutas con enie no rompan la salida.
+set "PYTHONUTF8=1"
+set "PYTHONIOENCODING=utf-8"
+
+rem Buscar un Python 3.10 o superior. Preferimos 'py -3' (lanzador oficial de
+rem Windows) y despues 'python'. Si no hay ninguno, avisamos y NO cerramos la
+rem ventana de golpe: el usuario tiene que poder leer el mensaje.
+set "PYTHON_CMD="
+where py >nul 2>nul && py -3 -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>nul && set "PYTHON_CMD=py -3"
+if not defined PYTHON_CMD (
+    where python >nul 2>nul && python -c "import sys; sys.exit(0 if sys.version_info >= (3, 10) else 1)" >nul 2>nul && set "PYTHON_CMD=python"
+)
+if not defined PYTHON_CMD (
+    echo.
+    echo   No se encontro Python 3.10 o superior.
+    echo.
+    echo   1. Descargalo de https://www.python.org/downloads/
+    echo   2. En el instalador, marca "Add Python to PATH".
+    echo   3. Volve a abrir este archivo con doble clic.
+    echo.
+    pause
+    popd
+    exit /b 1
+)
+
+rem Toda la logica vive en run_web.py: crea el entorno virtual si falta, elige
+rem un puerto libre, abre el navegador y levanta el servidor.
+%PYTHON_CMD% run_web.py %*
+
+rem Si hubo un error, deja la ventana abierta para que el mensaje se pueda
+rem leer. Si el usuario cerro la herramienta desde el boton "Salir", se cierra
+rem sola (no hace falta apretar una tecla de mas).
+if errorlevel 1 pause
+popd
